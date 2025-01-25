@@ -1,7 +1,6 @@
 {
     "files.associations": {
-        "evaluations.hpp": "c",
-        "utils.hpp": "c",
-        "bitonic_sort.cuh": "c"
+        "iostream": "cpp",
+        "stdexcept": "cpp"
     }
 }

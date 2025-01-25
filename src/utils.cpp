@@ -8,22 +8,23 @@ IntArray::IntArray(int length) : length(length) {
     }
 }
 
-
 IntArray::~IntArray() {
     delete[] data;
 }
 
 
-void fill_array_random(IntArray& array, int max_value) {
-    for (int i = 0; i < array.length; i++) {
-        array.data[i] = std::rand() % max_value;
+namespace ArrayUtils {
+    
+    void fill_array_random(IntArray& array, int max_value) {
+        for (int i = 0; i < array.length; i++) {
+            array.data[i] = std::rand() % max_value;
+        }
     }
-}
 
-
-void print_arr(const IntArray& array) {
-    for (int i = 0; i < array.length; i++) {
-        std::cout << array.data[i] << " ";
+    void print_arr(const IntArray& array) {
+        for (int i = 0; i < array.length; i++) {
+            std::cout << array.data[i] << " ";
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
 }

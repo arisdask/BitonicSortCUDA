@@ -6,11 +6,12 @@
 #include "../inc/evaluations.hpp"
 #include "../inc/bitonic_sort.cuh"
 
-// Comparison function for `std::qsort` & wrapper for compatibility with `IntArray`
+// Comparison function for `std::qsort`
 int compare_ints(const void* a, const void* b) {
     return (*(int*)a - *(int*)b);
 }
 
+// Wrapper for compatibility with `IntArray`
 void qsort_wrapper(IntArray& array) {
     std::qsort(array.data, array.length, sizeof(int), compare_ints);
 }
@@ -32,35 +33,33 @@ int main(int argc, char* argv[]) {
     // Seed the random number generator
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
-    // Create and initialize arrays
+    // Create and initialize arrays of the same length
     IntArray arr(arr_length);
     IntArray qsort_arr(arr_length);
 
-    fill_array_random(arr, 300);
+    ArrayUtils::fill_array_random(arr, 300);
 
     // Copy the data from `arr` to `qsort_arr`
-    for (int i = 0; i < arr.length; ++i) {
-        qsort_arr.data[i] = arr.data[i];
-    }
+    std::memcpy(qsort_arr.data, arr.data, arr.length * sizeof(int));
 
     // Sort using `std::qsort` for validation and performance comparison
-    eval_time(qsort_wrapper, qsort_arr);
+    EvalTools::eval_time(qsort_wrapper, qsort_arr);
 
     // Select the bitonic sort version
     void (*bitonic_sort)(IntArray&) = choose_version(version);
 
     std::cout << "Original Array:" << std::endl;
-    print_arr(arr);
+    ArrayUtils::print_arr(arr);
 
     // Sort using the selected bitonic sort version
-    eval_time(bitonic_sort, arr);
+    EvalTools::eval_time(bitonic_sort, arr);
 
     std::cout << "Sorted Array (Bitonic Sort V" << version << "):" << std::endl;
-    print_arr(arr);
+    ArrayUtils::print_arr(arr);
 
     // Validate the result
     bool eval_flag = true;
-    eval_sort(arr, qsort_arr, eval_flag);
+    EvalTools::eval_sort(arr, qsort_arr, eval_flag);
 
     if (eval_flag) {
         std::cout << "Validation successful: The arrays match!!" << std::endl;

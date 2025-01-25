@@ -12,42 +12,43 @@ void (*choose_version(int version))(IntArray&) {
     }
 }
 
+namespace EvalTools {
 
-void eval_time(void (*sort_func)(IntArray&), IntArray& array) {
-    using Clock = std::chrono::high_resolution_clock;
+    void eval_time(void (*sort_func)(IntArray&), IntArray& array) {
+        using Clock = std::chrono::high_resolution_clock;
 
-    // Measure start time
-    auto start = Clock::now();
+        // Measure start time
+        auto start = Clock::now();
 
-    // Call the sorting function
-    sort_func(array);
+        // Call the sorting function
+        sort_func(array);
 
-    // Measure end time
-    auto end = Clock::now();
-    std::chrono::duration<double> elapsed_time = end - start;
+        // Measure end time
+        auto end = Clock::now();
+        std::chrono::duration<double> elapsed_time = end - start;
 
-    // Print execution time
-    double time_taken = elapsed_time.count();
-    std::cout << "Execution Time: " << time_taken << " seconds, "
-              << "Normalized Execution Time: " << (time_taken / static_cast<double>(array.length))
-              << " seconds per element" << std::endl;
-}
-
-
-void eval_sort(const IntArray& array1, const IntArray& array2, bool& eval_flag) {
-    eval_flag = true;
-
-    // Check if lengths match
-    if (array1.length != array2.length) {
-        eval_flag = false;
-        return;
+        // Print execution time
+        double time_taken = elapsed_time.count();
+        std::cout << "Execution Time: " << time_taken << " seconds, "
+                << "Normalized Execution Time: " << (time_taken / static_cast<double>(array.length))
+                << " seconds per element" << std::endl;
     }
 
-    // Compare elements
-    for (int i = 0; i < array1.length; i++) {
-        if (array1.data[i] != array2.data[i]) {
+    void eval_sort(const IntArray& array1, const IntArray& array2, bool& eval_flag) {
+        eval_flag = true;
+
+        // Check if lengths match
+        if (array1.length != array2.length) {
             eval_flag = false;
             return;
+        }
+
+        // Compare elements
+        for (int i = 0; i < array1.length; i++) {
+            if (array1.data[i] != array2.data[i]) {
+                eval_flag = false;
+                return;
+            }
         }
     }
 }

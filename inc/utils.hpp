@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <cstdlib>
 
-
 /**
  * Struct to represent an integer array and its size.
  */
@@ -26,30 +25,34 @@ struct IntArray {
 
 
 /**
- * Fills an `IntArray` with random integer values.
- *
- * @param array      The `IntArray` to fill with random numbers.
- * @param max_value  The maximum value (exclusive) for the random numbers.
- *                   Each number will be in the range [0, max_value-1].
- *
- * @return void
- *
- * @note   This function assumes that the array's memory has already been allocated.
+ * Namespace for array-related utility functions.
  */
-void fill_array_random(IntArray& array, int max_value);
+namespace ArrayUtils {
+    /**
+     * Fills an `IntArray` with random integer values.
+     *
+     * @param array      The `IntArray` to fill with random numbers.
+     * @param max_value  The maximum value (exclusive) for the random numbers.
+     *                   Each number will be in the range [0, max_value-1].
+     *
+     * @return void
+     *
+     * @note   This function assumes that the array's memory has already been allocated.
+     */
+    void fill_array_random(IntArray& array, int max_value);
 
 
-/**
- * Prints the elements of an `IntArray` to the standard output.
- *
- * @param array The `IntArray` to be printed.
- *
- * @return void
- *
- * @note   Elements are printed in order, separated by spaces.
- *         The function does not modify the array.
- */
-void print_arr(const IntArray& array);
-
+    /**
+     * Prints the elements of an `IntArray` to the standard output.
+     *
+     * @param array The `IntArray` to be printed.
+     *
+     * @return void
+     *
+     * @note   Elements are printed in order, separated by spaces.
+     *         The function does not modify the array.
+     */
+    void print_arr(const IntArray& array);
+}
 
 #endif // UTILS_HPP
