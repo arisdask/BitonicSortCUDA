@@ -62,9 +62,9 @@ int main(int argc, char* argv[]) {
     EvalTools::eval_sort(arr, qsort_arr, eval_flag);
 
     if (eval_flag) {
-        std::cout << "Validation successful: The arrays match!!" << std::endl;
+        std::cout << "Validation successful: The arrays of qsort and bitonic sort match!!" << std::endl;
     } else {
-        std::cout << "Validation failed: The arrays do not match :(" << std::endl;
+        std::cout << "Validation failed: The arrays of qsort and bitonic sort do not match :(" << std::endl;
     }
 
     return EXIT_SUCCESS;

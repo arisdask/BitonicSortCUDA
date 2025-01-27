@@ -1,24 +1,19 @@
 #!/bin/bash
-#SBATCH --partition=batch
+#SBATCH --job-name=sort_27_0
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
-#SBATCH --cpus-per-task=1
-#SBATCH --time=00:05:00
-#SBATCH --output=logs/bitonic_sort_%j.out
-#SBATCH --error=logs/bitonic_sort_%j.err
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --time=00:30
+#SBATCH --output=logs/cuda_sort_27_0_%j.out
+#SBATCH --error=logs/cuda_sort_27_0_%j.err
 
-# Load required modules
-module load gcc openmpi
+nvidia-smi
 
-# Set environment variables
-export UCX_WARN_UNUSED_ENV_VARS=n
+# load the required modules
+module load gcc/13.2.0-iqpfkya cuda/12.4.0-zk32gam
 
-# In case of `UCX  ERROR connect(fd=.., dest_addr=..) failed: Connection timed out` 
-# uncomment *one* of the following exports (recommended to use tcp) to ensure "safer" transportation of data:
-# export UCX_TLS=tcp               # Use TCP for UCX transport
-# export UCX_RNDV_TIMEOUT=5000     # Time in milliseconds
+# compile and run bitonic_sort_cuda
+make clean
+make
 
-# Run the program using srun
-# Usage: $0 <q: 2^q numbers/process> <p: 2^p processes>
-# When we change the number of processes (2^p) we should set the nodes/ntasks-per-node
-srun ./bin/bitonic_mpi 20 3
+./bitonic_sort_cuda 27 0

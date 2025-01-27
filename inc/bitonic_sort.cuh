@@ -2,11 +2,15 @@
 #define BITONIC_SORT_CUH
 
 #include <iostream>
-#include <cmath>
-#include <cstring>
-// #include <cuda_runtime.h>
+#include <cstdio>
+#include <cstdlib>
 #include "utils.hpp"
+// #include "bitonic_sort_operations.cuh"
+#include </usr/local/cuda/include/cuda_runtime.h>
+// #include <cuda_runtime.h>
 
+// Adjust as needed for optimal performance based on the gpu's specs
+#define THREADS_PER_BLOCK 1024
 
 /**
  * Performs bitonic sort on an `IntArray` using the V0 implementation.
