@@ -25,6 +25,6 @@ namespace ArrayUtils {
         for (int i = 0; i < array.length; i++) {
             std::cout << array.data[i] << " ";
         }
-        std::cout << std::endl;
+        std::cout << std::endl << std::endl;
     }
 }

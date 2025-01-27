@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <string>
 #include "utils.hpp"
 #include "bitonic_sort.cuh"
 
@@ -30,13 +31,14 @@ namespace EvalTools {
      *
      * @param sort_func  A pointer to the sorting function to be timed.
      * @param array      The `IntArray` to be sorted.
+     * @param tag        A string tag to be displayed at the beginning of the result message.
      *
      * @return void
      *
      * @note   The function times the sorting operation and prints the elapsed time
      *         in seconds. **The sorting function modifies the array in place.**
      */
-    void eval_time(void (*sort_func)(IntArray&), IntArray& array);
+    void eval_time(void (*sort_func)(IntArray&), IntArray& array, const std::string& tag);
 
 
     /**

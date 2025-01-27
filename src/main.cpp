@@ -6,6 +6,9 @@
 #include "../inc/evaluations.hpp"
 #include "../inc/bitonic_sort.cuh"
 
+// Enable (1) or disable (0) array printing before and after sorting
+#define PRINT_ARRAY 0
+
 // Comparison function for `std::qsort`
 int compare_ints(const void* a, const void* b) {
     return (*(int*)a - *(int*)b);
@@ -15,6 +18,17 @@ int compare_ints(const void* a, const void* b) {
 void qsort_wrapper(IntArray& array) {
     std::qsort(array.data, array.length, sizeof(int), compare_ints);
 }
+
+// Print the header with arr_length and version
+void print_header(int power, int version) {
+    std::cout << "+==============================================  arr_length -> 2^" 
+            << power 
+            << "  |  version -> " 
+            << version 
+            << "  ==============================================+" << std::endl 
+            << std::endl;
+}
+
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -37,34 +51,40 @@ int main(int argc, char* argv[]) {
     IntArray arr(arr_length);
     IntArray qsort_arr(arr_length);
 
-    ArrayUtils::fill_array_random(arr, 300);
+    ArrayUtils::fill_array_random(arr, RAND_MAX);
+
+    print_header(std::atoi(argv[1]), version);
+    
+    #if PRINT_ARRAY
+        std::cout << "Original Array:" << std::endl;
+        ArrayUtils::print_arr(arr);
+    #endif
 
     // Copy the data from `arr` to `qsort_arr`
     std::memcpy(qsort_arr.data, arr.data, arr.length * sizeof(int));
 
     // Sort using `std::qsort` for validation and performance comparison
-    EvalTools::eval_time(qsort_wrapper, qsort_arr);
+    EvalTools::eval_time(qsort_wrapper, qsort_arr, "qsort");
 
     // Select the bitonic sort version
     void (*bitonic_sort)(IntArray&) = choose_version(version);
 
-    std::cout << "Original Array:" << std::endl;
-    ArrayUtils::print_arr(arr);
-
     // Sort using the selected bitonic sort version
-    EvalTools::eval_time(bitonic_sort, arr);
+    EvalTools::eval_time(bitonic_sort, arr, "bitonic sort V" + std::to_string(version));
 
-    std::cout << "Sorted Array (Bitonic Sort V" << version << "):" << std::endl;
-    ArrayUtils::print_arr(arr);
+    #if PRINT_ARRAY
+        std::cout << "Sorted Array (Bitonic Sort V" << version << "):" << std::endl;
+        ArrayUtils::print_arr(arr);
+    #endif
 
     // Validate the result
     bool eval_flag = true;
     EvalTools::eval_sort(arr, qsort_arr, eval_flag);
 
     if (eval_flag) {
-        std::cout << "Validation successful: The arrays of qsort and bitonic sort match!!" << std::endl;
+        std::cout << "Validation successful: The arrays of qsort and bitonic are sorted!!" << std::endl;
     } else {
-        std::cout << "Validation failed: The arrays of qsort and bitonic sort do not match :(" << std::endl;
+        std::cout << "Validation failed: The arrays of qsort or bitonic aren't sorted :(" << std::endl;
     }
 
     return EXIT_SUCCESS;
