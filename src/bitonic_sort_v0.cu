@@ -1,6 +1,5 @@
 #include "../inc/bitonic_sort.cuh"
 
-// Optimized CUDA kernel for the comparison and exchange in Bitonic Sort
 __global__ void bitonic_kernel_v0(int* data, int length, int stage, int step) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -16,20 +15,7 @@ __global__ void bitonic_kernel_v0(int* data, int length, int stage, int step) {
     // // Determine if the exchange should be in ascending order
     // bool ascending = (idx & (1 << (stage + 1))) == 0;
 
-    // Perform the comparison and exchange
-    if ( (idx & (1 << (stage + 1))) == 0 ) {
-        if (data[idx] > data[partner]) {
-            int temp = data[idx];
-            data[idx] = data[partner];
-            data[partner] = temp;
-        }
-    } else {
-        if (data[idx] < data[partner]) {
-            int temp = data[idx];
-            data[idx] = data[partner];
-            data[partner] = temp;
-        }
-    }
+    BITONIC_COMPARE_AND_SWAP(idx, idx, partner, stage, data)
 }
 
 void bitonic_sort_v0(IntArray& array) {
@@ -40,21 +26,25 @@ void bitonic_sort_v0(IntArray& array) {
     cudaMalloc(&d_data, size);
     cudaMemcpy(d_data, array.data, size, cudaMemcpyHostToDevice);
 
-    // Launch the Bitonic Sort
     int num_blocks = (array.length + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int stages     = __builtin_ctz(array.length); // __builtin_ctz gets log2(length)
 
+    // Launch the Bitonic Sort
     for (int stage = 0; stage < stages; stage++) {
         for (int step = stage; step >= 0; step--) {
             bitonic_kernel_v0<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, stage, step);
 
-            // // Check for kernel launch errors for debugging
-            // cudaError_t err = cudaGetLastError();
-            // if (err != cudaSuccess) {
-            //     printf("CUDA error: %s\n", cudaGetErrorString(err));
-            //     cudaFree(d_data);
-            //     return;
-            // }
+            #ifdef DEBUG
+            // Optional kernel error-checking
+            cudaError_t err = cudaGetLastError();
+            if (err != cudaSuccess) {
+                printf("CUDA error: %s\n", cudaGetErrorString(err));
+                cudaFree(d_data);
+                return;
+            }
+            #endif
+            
+            cudaDeviceSynchronize();
         }
     }
 

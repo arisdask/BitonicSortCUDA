@@ -21,11 +21,11 @@ void qsort_wrapper(IntArray& array) {
 
 // Print the header with arr_length and version
 void print_header(int power, int version) {
-    std::cout << "+==============================================  arr_length -> 2^" 
-            << power 
-            << "  |  version -> " 
-            << version 
-            << "  ==============================================+" << std::endl 
+    std::cout << "+==============================================  arr_length -> 2^"
+            << power
+            << "  |  version -> "
+            << version
+            << "  ==============================================+" << std::endl
             << std::endl;
 }
 
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     ArrayUtils::fill_array_random(arr, RAND_MAX);
 
     print_header(std::atoi(argv[1]), version);
-    
+
     #if PRINT_ARRAY
         std::cout << "Original Array:" << std::endl;
         ArrayUtils::print_arr(arr);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     #endif
 
     // Validate the result
-    bool eval_flag = true;
+    bool eval_flag = false;
     EvalTools::eval_sort(arr, qsort_arr, eval_flag);
 
     if (eval_flag) {
