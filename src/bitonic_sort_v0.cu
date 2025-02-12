@@ -1,21 +1,21 @@
 #include "../inc/bitonic_sort.cuh"
 
 __global__ void bitonic_kernel_v0(int* data, int length, int stage, int step) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Ensure threads operate within valid range
-    if (idx >= length) return;
+    if (tid >= (length >> 1)) return;
 
-    // Find the partner index
+    // Find the index that this thread will handle
+    int idx = GET_ARR_ID(tid, step);
+
+    // Find the partner index that this thread will handle
     int partner = idx ^ (1 << step);
 
     // Ensure valid partner index
     if (idx >= partner || partner >= length) return;
 
-    // // Determine if the exchange should be in ascending order
-    // bool ascending = (idx & (1 << (stage + 1))) == 0;
-
-    BITONIC_COMPARE_AND_SWAP(idx, idx, partner, stage, data)
+    exchange(data, idx, idx, partner, stage);
 }
 
 void bitonic_sort_v0(IntArray& array) {
@@ -25,8 +25,14 @@ void bitonic_sort_v0(IntArray& array) {
     // Allocate memory on the device
     cudaMalloc(&d_data, size);
     cudaMemcpy(d_data, array.data, size, cudaMemcpyHostToDevice);
+    
+    #ifdef TIME_MEASURE
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start); cudaEventCreate(&stop);
+    cudaEventRecord(start);
+    #endif
 
-    int num_blocks = (array.length + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int stages     = __builtin_ctz(array.length); // __builtin_ctz gets log2(length)
 
     // Launch the Bitonic Sort
@@ -35,18 +41,23 @@ void bitonic_sort_v0(IntArray& array) {
             bitonic_kernel_v0<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, stage, step);
 
             #ifdef DEBUG
-            // Optional kernel error-checking
-            cudaError_t err = cudaGetLastError();
-            if (err != cudaSuccess) {
-                printf("CUDA error: %s\n", cudaGetErrorString(err));
-                cudaFree(d_data);
-                return;
-            }
+            if (check_cuda_error(d_data)) return;
             #endif
             
             cudaDeviceSynchronize();
         }
     }
+
+    #ifdef TIME_MEASURE
+    cudaEventRecord(stop); cudaEventSynchronize(stop);
+    float milliseconds = 0;
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf("[v0 internal time] Execution Time: %f msec, Normalized Execution Time: %f msec per element\n", 
+            milliseconds, milliseconds / array.length);
+
+    cudaEventDestroy(start); cudaEventDestroy(stop);
+    #endif
 
     // Copy the sorted data back to the host
     cudaMemcpy(array.data, d_data, size, cudaMemcpyDeviceToHost);

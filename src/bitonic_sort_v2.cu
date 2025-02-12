@@ -1,68 +1,67 @@
 #include "../inc/bitonic_sort.cuh"
 
-// Load data from global memory into shared memory
-#define LOAD_TO_SHARED(global_idx, length, shared_array, local_idx, global_array)   \
-    if ((global_idx) < (length)) {                                                  \
-        (shared_array)[local_idx] = (global_array)[global_idx];                     \
-    } else {                                                                        \
-        (shared_array)[local_idx] = INT_MAX; /* Sentinel value for out-of-bounds */ \
-    }
-
-// Write back sorted data to global memory
-#define WRITE_TO_GLOBAL(global_idx, length, global_array, local_idx, shared_array)  \
-    if ((global_idx) < (length)) {                                                  \
-        (global_array)[global_idx] = (shared_array)[local_idx];                     \
-    }
-
-
-__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_min) {
+__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_max) {
     // Define shared memory for local block storage
-    __shared__ int shared_data[THREADS_PER_BLOCK];
+    // Each thread block can handle `2*THREADS_PER_BLOCK` elements (the idx & the partner)
+    __shared__ int shared_data[THREADS_PER_BLOCK << 1];
 
-    int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int local_idx  = threadIdx.x;
+    int global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
+    int local_tid   = threadIdx.x;
+    int global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    int local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
 
-    LOAD_TO_SHARED(global_idx, length, shared_data, local_idx, data);
+    load_to_shared(global_idx, length, shared_data, local_idx, data);
     __syncthreads();  // Synchronize to ensure all threads have loaded data
 
-    // Perform bitonic sorting for the initial stages (0 to step_min-1)
-    for (int stage = 0; stage < step_min; stage++) {
+    // Perform bitonic sorting for the initial stages (0 to step_max)
+    for (int stage = 0; stage <= step_max; stage++) {
         for (int step = stage; step >= 0; step--) {
-            // Compute partner index within the block
-            int partner_idx = local_idx ^ (1 << step);
+            int idx = GET_ARR_ID(local_tid, step);
 
-            if (local_idx < partner_idx && partner_idx < blockDim.x) {
-                BITONIC_COMPARE_AND_SWAP(local_idx, global_idx, partner_idx, stage, shared_data);
+            // Compute partner index within the block
+            int partner = idx ^ (1 << step);
+
+            if (idx < partner && partner < (THREADS_PER_BLOCK << 1)) {
+                global_idx = GET_ARR_ID(global_tid, step);  // Global position of element
+                exchange(shared_data, idx, global_idx, partner, stage);
             }
             __syncthreads();  // Synchronize threads after each step
         }
     }
 
-    WRITE_TO_GLOBAL(global_idx, length, data, local_idx, shared_data);
+    global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    write_to_global(global_idx, length, data, local_idx, shared_data);
 }
 
-__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_min) {
+__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_max) {
     // Define shared memory for local block storage
-    __shared__ int shared_data[THREADS_PER_BLOCK];
+    // Each thread block can handle `2*THREADS_PER_BLOCK` elements (the idx & the partner)
+    __shared__ int shared_data[THREADS_PER_BLOCK << 1];
 
-    int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int local_idx  = threadIdx.x;
+    int global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
+    int local_tid   = threadIdx.x;
+    int global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    int local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
 
-    LOAD_TO_SHARED(global_idx, length, shared_data, local_idx, data);
+    load_to_shared(global_idx, length, shared_data, local_idx, data);
     __syncthreads();  // Synchronize to ensure all threads have loaded data
 
-    // Perform bitonic sorting for the lower steps (step_min-1 to 0)
-    for (int step = step_min - 1; step >= 0; step--) {
-        // Compute partner index within the block
-        int partner_idx = local_idx ^ (1 << step);
+    // Perform bitonic sorting for the lower steps (step_max to 0)
+    for (int step = step_max; step >= 0; step--) {
+        int idx = GET_ARR_ID(local_tid, step);
 
-        if (local_idx < partner_idx && partner_idx < blockDim.x) {
-            BITONIC_COMPARE_AND_SWAP(local_idx, global_idx, partner_idx, stage, shared_data);
+        // Compute partner index within the block
+        int partner = idx ^ (1 << step);
+
+        if (idx < partner && partner < (THREADS_PER_BLOCK << 1)) {
+            global_idx = GET_ARR_ID(global_tid, step);
+            exchange(shared_data, idx, global_idx, partner, stage);
         }
         __syncthreads();  // Synchronize threads after each step
     }
 
-    WRITE_TO_GLOBAL(global_idx, length, data, local_idx, shared_data);
+    global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    write_to_global(global_idx, length, data, local_idx, shared_data);
 }
 
 void bitonic_sort_v2(IntArray& array) {
@@ -72,50 +71,57 @@ void bitonic_sort_v2(IntArray& array) {
     // Allocate memory on the device
     cudaMalloc(&d_data, size);
     cudaMemcpy(d_data, array.data, size, cudaMemcpyHostToDevice);
+    
+    #ifdef TIME_MEASURE
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start); cudaEventCreate(&stop);
+    cudaEventRecord(start);
+    #endif
 
-    int num_blocks = (array.length + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int stages     = __builtin_ctz(array.length); // log2(array.length)
     
-    // This is the minimum step **that exceeds** the current thread block boundary
-    int step_min   = __builtin_ctz(THREADS_PER_BLOCK);
+    // This is the maximum step that can be handled by a single thread block
+    int step_max   = __builtin_ctz(THREADS_PER_BLOCK);
 
-    // Launch the v2 kernel for the *first stages*, in which stage = 0:1:(step_min-1)
-    bitonic_kernel_v2_first_stages<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, step_min);
+    // Launch the v2 kernel for the *first stages*, in which stage = 0:1:step_max
+    bitonic_kernel_v2_first_stages<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, step_max);
+    cudaDeviceSynchronize();
 
     // Launch the Bitonic Sort for higher stages
-    // All the previous stages, from 0 to step_min-1, were handled by a single kernel call
-    for (int stage = step_min; stage < stages; stage++) {
-        for (int step = stage; step >= step_min; step--) {
-            // Launch the kernel v0 for higher steps ( >= step_min )
+    // All the previous stages, from 0 to step_max, were handled by a single kernel call
+    for (int stage = step_max+1; stage < stages; stage++) {
+        for (int step = stage; step > step_max; step--) {
+            // Launch the kernel v0 for higher steps ( > step_max )
             bitonic_kernel_v0<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, stage, step);
 
             #ifdef DEBUG
-            // Optional kernel error-checking
-            cudaError_t err = cudaGetLastError();
-            if (err != cudaSuccess) {
-                printf("CUDA error: %s\n", cudaGetErrorString(err));
-                cudaFree(d_data);
-                return;
-            }
+            if (check_cuda_error(d_data)) return;
             #endif
 
             cudaDeviceSynchronize();
         }
 
-        // Launch the v2 kernel for all *lower steps*, in which step = (step_min-1):-1:0
-        bitonic_kernel_v2_lower_steps<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, stage, step_min);
+        // Launch the v2 kernel for all *lower steps*, in which step = step_max:-1:0
+        bitonic_kernel_v2_lower_steps<<<num_blocks, THREADS_PER_BLOCK>>>(d_data, array.length, stage, step_max);
 
         #ifdef DEBUG
-        cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) {
-            printf("CUDA error: %s\n", cudaGetErrorString(err));
-            cudaFree(d_data);
-            return;
-        }
+        if (check_cuda_error(d_data)) return;
         #endif
 
         cudaDeviceSynchronize();
     }
+
+    #ifdef TIME_MEASURE
+    cudaEventRecord(stop); cudaEventSynchronize(stop);
+    float milliseconds = 0;
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf("[v2 internal time] Execution Time: %f msec, Normalized Execution Time: %f msec per element\n", 
+            milliseconds, milliseconds / array.length);
+
+    cudaEventDestroy(start); cudaEventDestroy(stop);
+    #endif
 
     // Copy the sorted data back to the host
     cudaMemcpy(array.data, d_data, size, cudaMemcpyDeviceToHost);

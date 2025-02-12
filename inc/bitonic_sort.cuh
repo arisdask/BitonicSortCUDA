@@ -1,11 +1,9 @@
 #ifndef BITONIC_SORT_CUH
 #define BITONIC_SORT_CUH
 
-#include <iostream>
-#include <cstdio>
-#include <cstdlib>
+// #include <cstdlib>
 #include "utils.hpp"
-// #include "bitonic_sort_operations.cuh"
+#include "bitonic_sort_operations.cuh"
 // #include </usr/local/cuda/include/cuda_runtime.h>
 #include <cuda_runtime.h>
 
@@ -15,33 +13,13 @@
  */
 #define THREADS_PER_BLOCK 1024
 
-/**
- * BITONIC_COMPARE_AND_SWAP:
- * This macro performs the comparison and swap operation for a single step in the bitonic sorting process.
- * 
- * @param local_idx:  The index of the current thread's local data element in the shared or global memory array.
- * @param global_idx: The index of the current thread's global position in the array.
- * @param partner:    The index of the partner element with which the current element is compared and potentially swapped.
- * @param stage:      The current sorting stage, which determines the sorting direction (ascending or descending).
- * @param data:       A pointer to the array containing the data being sorted.
- */
-#define BITONIC_COMPARE_AND_SWAP(local_idx, global_idx, partner, stage, data)   \
-    if (((global_idx) & (1 << ((stage) + 1))) == 0) {                           \
-        if ((data)[local_idx] > (data)[partner]) {                              \
-            int temp          = (data)[local_idx];                              \
-            (data)[local_idx] = (data)[partner];                                \
-            (data)[partner]   = temp;                                           \
-        }                                                                       \
-    } else {                                                                    \
-        if ((data)[local_idx] < (data)[partner]) {                              \
-            int temp          = (data)[local_idx];                              \
-            (data)[local_idx] = (data)[partner];                                \
-            (data)[partner]   = temp;                                           \
-        }                                                                       \
-    }
 
 //////// !!!  Uncomment the next line to enable debug mode in the source code  !!! ////////
 // #define DEBUG
+
+
+////////// !!!  Uncomment the next line to enable internal time measurement  !!! //////////
+#define TIME_MEASURE
 
 
 ///////////////////////////////////   Bitonic Sort V0   ///////////////////////////////////
@@ -82,9 +60,9 @@ void bitonic_sort_v0(IntArray& array);
  * 
  * @param data      Pointer to the array of integers in global memory.
  * @param length    Total number of elements in the array.
- * @param step_min  the minimum step **that exceeds** the current thread block boundary.
+ * @param step_max  the maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_min);
+__global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_max);
 
 /**
  * @brief Performs the lower steps of a given stage in bitonic sort 
@@ -93,9 +71,9 @@ __global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_m
  * @param data      Pointer to the array of integers in global memory.
  * @param length    Total number of elements in the array.
  * @param stage     Current sorting stage being processed.
- * @param step_min  The minimum step **that exceeds** the current thread block boundary.
+ * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v1_lower_steps(int* data, int length, int stage, int step_min);
+__global__ void bitonic_kernel_v1_lower_steps(int* data, int length, int stage, int step_max);
 
 /**
  * Performs bitonic sort on an `IntArray` using the V1 implementation.
@@ -117,9 +95,9 @@ void bitonic_sort_v1(IntArray& array);
  * 
  * @param data      Pointer to the array of integers in global memory.
  * @param length    Total number of elements in the array.
- * @param step_min  The minimum step **that exceeds** the current thread block boundary.
+ * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_min);
+__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_max);
 
 /**
  * @brief Performs the lower steps of a given stage in bitonic sort 
@@ -128,9 +106,9 @@ __global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_m
  * @param data      Pointer to the array of integers in global memory.
  * @param length    Total number of elements in the array.
  * @param stage     Current sorting stage being processed.
- * @param step_min  The minimum step **that exceeds** the current thread block boundary.
+ * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_min);
+__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_max);
 
 /**
  * Performs bitonic sort on an `IntArray` using the V2 implementation.
