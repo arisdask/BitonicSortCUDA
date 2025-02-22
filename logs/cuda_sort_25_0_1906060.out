@@ -1,0 +1,37 @@
+Wed Feb 12 04:04:54 2025       
++---------------------------------------------------------------------------------------+
+| NVIDIA-SMI 535.183.06             Driver Version: 535.183.06   CUDA Version: 12.2     |
+|-----------------------------------------+----------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |
+|                                         |                      |               MIG M. |
+|=========================================+======================+======================|
+|   0  Tesla P100-PCIE-12GB           On  | 00000000:04:00.0 Off |                    0 |
+| N/A   27C    P0              31W / 250W |      0MiB / 12288MiB |      0%      Default |
+|                                         |                      |                  N/A |
++-----------------------------------------+----------------------+----------------------+
+                                                                                         
++---------------------------------------------------------------------------------------+
+| Processes:                                                                            |
+|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
+|        ID   ID                                                             Usage      |
+|=======================================================================================|
+|  No running processes found                                                           |
++---------------------------------------------------------------------------------------+
+rm -rf obj bitonic_sort_cuda
+mkdir -p obj
+g++   -Wall -Wextra -O3   -Iinc -c src/utils.cpp -o obj/utils.o
+g++   -Wall -Wextra -O3   -Iinc -c src/evaluations.cpp -o obj/evaluations.o
+g++   -Wall -Wextra -O3   -Iinc -c src/main.cpp -o obj/main.o
+nvcc -arch=sm_60 -Xcompiler="-Wall -Wextra -O3"  -Iinc -c src/bitonic_sort_v0.cu -o obj/bitonic_sort_v0.o
+nvcc -arch=sm_60 -Xcompiler="-Wall -Wextra -O3"  -Iinc -c src/bitonic_sort_v1.cu -o obj/bitonic_sort_v1.o
+nvcc -arch=sm_60 -Xcompiler="-Wall -Wextra -O3"  -Iinc -c src/bitonic_sort_v2.cu -o obj/bitonic_sort_v2.o
+nvcc obj/utils.o obj/evaluations.o obj/main.o obj/bitonic_sort_v0.o obj/bitonic_sort_v1.o obj/bitonic_sort_v2.o -o bitonic_sort_cuda -lm
++==============================================  arr_length -> 2^25  |  version -> 0  ==============================================+
+
+[qsort] Execution Time: 5.98122 seconds, Normalized Execution Time: 1.78254e-07 seconds per element
+
+[v0 internal time] Execution Time: 179.063812 msec, Normalized Execution Time: 0.000005 msec per element
+[bitonic sort V0] Execution Time: 0.39529 seconds, Normalized Execution Time: 1.17806e-08 seconds per element
+
+Validation successful: The arrays of qsort and bitonic are sorted!!
