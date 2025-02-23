@@ -152,7 +152,18 @@ The script performs the following steps:
    - `[q_2]`: Optional. The ending value of `q` (defaults to `q_1`).
    - `-v <v>`: Optional. Specifies the version to run (must be 0, 1, or 2). If omitted, it runs for all versions.
 
-   ***Note:*** In case we need to run the code for $q > 27$, then we probably need to change the total time allocated for the job in the SLURM script `sbatch-hpc-bitonic-cuda.sh` from **2 minutes to 5 minutes** to ensure that the code executes before the time limit.
+   ***Notes:*** 
+   - In case we need to run the code for $q > 27$, then we probably need to change the total time allocated for the job in the SLURM script `sbatch-hpc-bitonic-cuda.sh` from **2 minutes to 5 minutes** to ensure that the code executes before the time limit.
+   - In case the `bash-submit-test-cases.sh` script does not have permission to execute, consider running the following command:
+      ```bash
+      chmod +x bash-submit-test-cases.sh
+      ```
+      
+      Alternatively, you can execute the script directly using:
+      ```bash
+      bash bash-submit-test-cases.sh <q_1> [q_2] [-v <v>]
+      ```
+
 
 2. **Examples**:
 
