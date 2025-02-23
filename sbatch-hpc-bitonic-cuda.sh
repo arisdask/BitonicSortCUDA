@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --time=00:30
+#SBATCH --time=02:00
 #SBATCH --output=logs/cuda_sort_27_0_%j.out
 #SBATCH --error=logs/cuda_sort_27_0_%j.err
 
