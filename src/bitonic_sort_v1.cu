@@ -1,7 +1,7 @@
 #include "../inc/bitonic_sort.cuh"
 
-__global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_max) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void bitonic_kernel_v1_first_stages(int* data, size_t length, int step_max) {
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Ensure threads operate within valid range
     if (tid >= (length >> 1)) return;
@@ -9,10 +9,10 @@ __global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_m
     for (int stage = 0; stage <= step_max; stage++) {
         for (int step = stage; step >= 0; step--) {
             // Find the index that this thread will handle
-            int idx = GET_ARR_ID(tid, step);
+            size_t idx = GET_ARR_ID(tid, (size_t)step);
 
             // Find the partner index that this thread will handle
-            int partner = idx ^ (1 << step);
+            size_t partner = idx ^ (1 << step);
 
             // Ensure valid partner index
             if (idx < partner && partner < length) {
@@ -23,18 +23,18 @@ __global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_m
     }
 }
 
-__global__ void bitonic_kernel_v1_lower_steps(int* data, int length, int stage, int step_max) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void bitonic_kernel_v1_lower_steps(int* data, size_t length, int stage, int step_max) {
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Ensure threads operate within valid range
     if (tid >= (length >> 1)) return;
 
     for (int step = step_max; step >= 0; step--) {
         // Find the index that this thread will handle
-        int idx = GET_ARR_ID(tid, step);
+        size_t idx = GET_ARR_ID(tid, (size_t)step);
 
         // Find the partner index
-        int partner = idx ^ (1 << step);
+        size_t partner = idx ^ (1 << step);
 
         // Ensure valid partner index
         if (idx < partner && partner < length) {
@@ -59,8 +59,8 @@ void bitonic_sort_v1(IntArray& array) {
     cudaEventRecord(start);
     #endif
 
-    int num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    int stages     = __builtin_ctz(array.length); // log2(array.length)
+    size_t num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int    stages     = __builtin_ctz(array.length); // log2(array.length)
     
     // This is the maximum step that can be handled by a single thread block
     int step_max   = __builtin_ctz(THREADS_PER_BLOCK);

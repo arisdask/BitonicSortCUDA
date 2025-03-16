@@ -39,8 +39,8 @@
  * @param partner     The index of the partner element with which the current element is compared and potentially swapped.
  * @param stage       The current sorting stage, which determines the sorting direction (ascending or descending).
  */
-__device__ __forceinline__ void exchange(int* data, int local_idx, int global_idx, int partner, int stage) {
-    if ( (global_idx & (1 << (stage + 1))) == 0 ) {
+__device__ __forceinline__ void exchange(int* data, size_t local_idx, size_t global_idx, size_t partner, int stage) {
+    if ( (global_idx & (1 << ((size_t)stage + 1))) == 0 ) {
         // Swap if elements are out of order in ascending order
         if (data[local_idx] > data[partner]) {
             int temp        = data[local_idx];
@@ -68,11 +68,11 @@ __device__ __forceinline__ void exchange(int* data, int local_idx, int global_id
  * @param local_idx     The index in the shared memory array.
  * @param global_array  Pointer to the global memory array.
  */
-__device__ __forceinline__ void load_to_shared(const int    global_idx,
-                                              const int     length,
-                                              int*          shared_array,
-                                              const int     local_idx,
-                                              const int*    global_array) {
+__device__ __forceinline__ void load_to_shared(const size_t  global_idx,
+                                              const size_t   length,
+                                              int*           shared_array,
+                                              const size_t   local_idx,
+                                              const int*     global_array) {
     // Load valid elements; otherwise, assign INT_MAX for out-of-bounds values.
     shared_array[local_idx]     = (global_idx     < length) ? global_array[global_idx]     : INT_MAX;
     shared_array[local_idx + 1] = ((global_idx+1) < length) ? global_array[global_idx + 1] : INT_MAX;
@@ -88,11 +88,11 @@ __device__ __forceinline__ void load_to_shared(const int    global_idx,
  * @param local_idx     The index in the shared memory array.
  * @param shared_array  Pointer to shared memory where sorted data is stored.
  */
-__device__ __forceinline__ void write_to_global(const int   global_idx,
-                                               const int    length,
-                                               int*         global_array,
-                                               const int    local_idx,
-                                               const int*   shared_array) {
+__device__ __forceinline__ void write_to_global(const size_t  global_idx,
+                                               const size_t   length,
+                                               int*           global_array,
+                                               const size_t   local_idx,
+                                               const int*     shared_array) {
     if (global_idx < length)        { global_array[global_idx]     = shared_array[local_idx]; }
     if ((global_idx + 1) < length)  { global_array[global_idx + 1] = shared_array[local_idx + 1]; }
 }

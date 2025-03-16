@@ -37,7 +37,7 @@
  *         performs a comparison, and exchanges values if necessary. The kernel
  *         ensures threads operate only within valid array boundaries.
  */
-__global__ void bitonic_kernel_v0(int* data, int length, int stage, int step);
+__global__ void bitonic_kernel_v0(int* data, size_t length, int stage, int step);
 
 /**
  * Performs bitonic sort on an `IntArray` using the V0 implementation.
@@ -62,7 +62,7 @@ void bitonic_sort_v0(IntArray& array);
  * @param length    Total number of elements in the array.
  * @param step_max  the maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_max);
+__global__ void bitonic_kernel_v1_first_stages(int* data, size_t length, int step_max);
 
 /**
  * @brief Performs the lower steps of a given stage in bitonic sort 
@@ -73,7 +73,7 @@ __global__ void bitonic_kernel_v1_first_stages(int* data, int length, int step_m
  * @param stage     Current sorting stage being processed.
  * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v1_lower_steps(int* data, int length, int stage, int step_max);
+__global__ void bitonic_kernel_v1_lower_steps(int* data, size_t length, int stage, int step_max);
 
 /**
  * Performs bitonic sort on an `IntArray` using the V1 implementation.
@@ -97,7 +97,7 @@ void bitonic_sort_v1(IntArray& array);
  * @param length    Total number of elements in the array.
  * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_max);
+__global__ void bitonic_kernel_v2_first_stages(int* data, size_t length, int step_max);
 
 /**
  * @brief Performs the lower steps of a given stage in bitonic sort 
@@ -108,7 +108,7 @@ __global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_m
  * @param stage     Current sorting stage being processed.
  * @param step_max  The maximum step that can be handled by a single thread block.
  */
-__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_max);
+__global__ void bitonic_kernel_v2_lower_steps(int* data, size_t length, int stage, int step_max);
 
 /**
  * Performs bitonic sort on an `IntArray` using the V2 implementation.

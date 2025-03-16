@@ -1,16 +1,16 @@
 #include "../inc/bitonic_sort.cuh"
 
-__global__ void bitonic_kernel_v0(int* data, int length, int stage, int step) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void bitonic_kernel_v0(int* data, size_t length, int stage, int step) {
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Ensure threads operate within valid range
     if (tid >= (length >> 1)) return;
 
     // Find the index that this thread will handle
-    int idx = GET_ARR_ID(tid, step);
+    size_t idx = GET_ARR_ID(tid, (size_t)step);
 
     // Find the partner index that this thread will handle
-    int partner = idx ^ (1 << step);
+    size_t partner = idx ^ (1 << step);
 
     // Ensure valid partner index
     if (idx >= partner || partner >= length) return;
@@ -32,8 +32,8 @@ void bitonic_sort_v0(IntArray& array) {
     cudaEventRecord(start);
     #endif
 
-    int num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    int stages     = __builtin_ctz(array.length); // __builtin_ctz gets log2(length)
+    size_t num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int    stages     = __builtin_ctz(array.length); // __builtin_ctz gets log2(length)
 
     // Launch the Bitonic Sort
     for (int stage = 0; stage < stages; stage++) {

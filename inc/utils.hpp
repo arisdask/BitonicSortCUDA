@@ -4,16 +4,17 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <cstdint>
 
 /**
  * Struct to represent an integer array and its size.
  */
 struct IntArray {
-    int* data;    // Pointer to the array data.
-    int  length;  // Number of elements in the array.
+    int*      data;    // Pointer to the array data.
+    uint64_t  length;  // Number of elements in the array.
 
     // Constructor: Allocates memory for the array and initializes its size.
-    explicit IntArray(int length);
+    explicit IntArray(uint64_t length);
 
     // Destructor: Frees allocated memory.
     ~IntArray();
@@ -39,7 +40,7 @@ namespace ArrayUtils {
      *
      * @note   This function assumes that the array's memory has already been allocated.
      */
-    void fill_array_random(IntArray& array, int max_value);
+    void fill_array_random(IntArray& array, uint64_t max_value);
 
 
     /**

@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    int arr_length = 1 << std::atoi(argv[1]);
-    int version    = std::atoi(argv[2]);
+    uint64_t  arr_length = 1 << std::atoi(argv[1]);
+    int       version    = std::atoi(argv[2]);
 
     if (version < 0 || version > 2) {
         std::cerr << "Invalid version. Supported versions: 0, 1, 2." << std::endl;

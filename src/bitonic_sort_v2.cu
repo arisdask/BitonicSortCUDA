@@ -1,14 +1,14 @@
 #include "../inc/bitonic_sort.cuh"
 
-__global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_max) {
+__global__ void bitonic_kernel_v2_first_stages(int* data, size_t length, int step_max) {
     // Define shared memory for local block storage
     // Each thread block can handle `2*THREADS_PER_BLOCK` elements (the idx & the partner)
     __shared__ int shared_data[THREADS_PER_BLOCK << 1];
 
-    int global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
-    int local_tid   = threadIdx.x;
-    int global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
-    int local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
+    size_t global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t local_tid   = threadIdx.x;
+    size_t global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    size_t local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
 
     load_to_shared(global_idx, length, shared_data, local_idx, data);
     __syncthreads();  // Synchronize to ensure all threads have loaded data
@@ -16,13 +16,13 @@ __global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_m
     // Perform bitonic sorting for the initial stages (0 to step_max)
     for (int stage = 0; stage <= step_max; stage++) {
         for (int step = stage; step >= 0; step--) {
-            int idx = GET_ARR_ID(local_tid, step);
+            size_t idx = GET_ARR_ID(local_tid, (size_t)step);
 
             // Compute partner index within the block
-            int partner = idx ^ (1 << step);
+            size_t partner = idx ^ (1 << step);
 
             if (idx < partner && partner < (THREADS_PER_BLOCK << 1)) {
-                global_idx = GET_ARR_ID(global_tid, step);  // Global position of element
+                global_idx = GET_ARR_ID(global_tid, (size_t)step);  // Global position of element
                 exchange(shared_data, idx, global_idx, partner, stage);
             }
             __syncthreads();  // Synchronize threads after each step
@@ -33,28 +33,28 @@ __global__ void bitonic_kernel_v2_first_stages(int* data, int length, int step_m
     write_to_global(global_idx, length, data, local_idx, shared_data);
 }
 
-__global__ void bitonic_kernel_v2_lower_steps(int* data, int length, int stage, int step_max) {
+__global__ void bitonic_kernel_v2_lower_steps(int* data, size_t length, int stage, int step_max) {
     // Define shared memory for local block storage
     // Each thread block can handle `2*THREADS_PER_BLOCK` elements (the idx & the partner)
     __shared__ int shared_data[THREADS_PER_BLOCK << 1];
 
-    int global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
-    int local_tid   = threadIdx.x;
-    int global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
-    int local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
+    size_t global_tid  = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t local_tid   = threadIdx.x;
+    size_t global_idx  = global_tid << 1;  // GET_ARR_ID(global_tid, 0);
+    size_t local_idx   = local_tid << 1;   // GET_ARR_ID(local_tid, 0);
 
     load_to_shared(global_idx, length, shared_data, local_idx, data);
     __syncthreads();  // Synchronize to ensure all threads have loaded data
 
     // Perform bitonic sorting for the lower steps (step_max to 0)
     for (int step = step_max; step >= 0; step--) {
-        int idx = GET_ARR_ID(local_tid, step);
+        size_t idx = GET_ARR_ID(local_tid, (size_t)step);
 
         // Compute partner index within the block
-        int partner = idx ^ (1 << step);
+        size_t partner = idx ^ (1 << step);
 
         if (idx < partner && partner < (THREADS_PER_BLOCK << 1)) {
-            global_idx = GET_ARR_ID(global_tid, step);
+            global_idx = GET_ARR_ID(global_tid, (size_t)step);
             exchange(shared_data, idx, global_idx, partner, stage);
         }
         __syncthreads();  // Synchronize threads after each step
@@ -78,8 +78,8 @@ void bitonic_sort_v2(IntArray& array) {
     cudaEventRecord(start);
     #endif
 
-    int num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    int stages     = __builtin_ctz(array.length); // log2(array.length)
+    size_t num_blocks = ((array.length >> 1) + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int    stages     = __builtin_ctz(array.length); // log2(array.length)
     
     // This is the maximum step that can be handled by a single thread block
     int step_max   = __builtin_ctz(THREADS_PER_BLOCK);

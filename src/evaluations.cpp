@@ -45,7 +45,7 @@ namespace EvalTools {
         }
 
         // Compare elements and check sorted order in one loop
-        for (int i = 0; i < array1.length; i++) {
+        for (uint64_t i = 0; i < array1.length; i++) {
             if ( array1.data[i] != array2.data[i] || 
                 (i > 0 && array1.data[i] < array1.data[i - 1]) ) {
                 eval_flag = false;
